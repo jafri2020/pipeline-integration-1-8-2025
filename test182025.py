@@ -13,6 +13,8 @@ from fall_detect_local import start_watching  # <- Import watcher module
 # Load environment variables from .env file
 from speaker_detc import identify_speaker
 from record_audio import record
+from resemblyzer import VoiceEncoder, preprocess_wav
+
 
 from class_keyword_publisher import KeywordPublisher
 import subprocess
@@ -132,7 +134,8 @@ class ChatbotFSM:
     def __init__(self):
         self.machine = Machine(model=self, states=states, initial='IDLE')
         self.state_stack = []  # To save/restore previous state on interrupt
- 
+        self.encoder = VoiceEncoder()
+
         # using for speech:
         self.last_transcript = ""
         self.last_response = ""
@@ -185,7 +188,7 @@ class ChatbotFSM:
             def run_speaker_identification():
                 try:
                     input_wav = preprocess_wav(Path("recordings/temp_recorded.wav"))
-                    input_embedding = encoder.embed_utterance(input_wav)
+                    input_embedding = self.encoder.embed_utterance(input_wav)
                     speaker = identify_speaker(input_embedding)  #knownembeddings are aready in the funtion in the speaker_detc.py
                     speaker_result["name"] = speaker
                     print(f"🧠 Identified speaker: {speaker}")
