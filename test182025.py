@@ -14,6 +14,8 @@ from fall_detect_local import start_watching  # <- Import watcher module
 from speaker_detc import identify_speaker
 from record_audio import record
 from resemblyzer import VoiceEncoder, preprocess_wav
+from pathlib import Path
+
 
 
 from class_keyword_publisher import KeywordPublisher
