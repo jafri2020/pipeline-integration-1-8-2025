@@ -11,12 +11,14 @@ import threading
 import uvicorn
 from fall_detect_local import start_watching  # <- Import watcher module
 # Load environment variables from .env file
-from speaker_detc import identify_speaker
+from speaker
 from class_keyword_publisher import KeywordPublisher
 import subprocess
 import rospy
 import re
 import signal
+import threading
+
  
 load_dotenv()
  
@@ -181,12 +183,8 @@ class ChatbotFSM:
         try:
             subprocess.run(["rosparam", "set", param_name, "sttrunning"])
             self.record_audio("temp_recorded.wav")
-            
-            #speaker identification needs to be converted into thread
-            speaker = identify_speaker()
+            speaker = detect_speaker()
             print(speaker)
-            #speaker identification ended 
-            
             audio_config = speechsdk.AudioConfig(filename="temp_recorded.wav")
             recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
             result = self.recognizer.recognize_once_async().get()
