@@ -12,13 +12,6 @@ from collections import Counter
 #load speaker embeddings
 with open("known_embeddings.pkl", "rb") as f:
     known_embeddings = pickle.load(f)
-encoder = VoiceEncoder()
-
-# Input audio to identify
-record("recordings/temp_recorded.wav")
-input_wav = preprocess_wav(Path("recordings/temp_recorded.wav"))
-input_embedding = encoder.embed_utterance(input_wav)
-
 
 def identify_speaker(input_emb, known_embs):
     names = list(known_embs.keys())
