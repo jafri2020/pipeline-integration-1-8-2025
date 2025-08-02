@@ -11,14 +11,14 @@ import threading
 import uvicorn
 from fall_detect_local import start_watching  # <- Import watcher module
 # Load environment variables from .env file
-from speaker
+from speaker_detc import identify_speaker
+from record_audio import record
+
 from class_keyword_publisher import KeywordPublisher
 import subprocess
 import rospy
 import re
 import signal
-import threading
-
  
 load_dotenv()
  
@@ -166,32 +166,46 @@ class ChatbotFSM:
         # Fallback universal transition to WAKEWORD
         self.machine.add_transition('to_WAKEWORD', '*', 'WAKEWORD')
        
-    def record_audio(self, filename="temp_recorded.wav", duration=5, sample_rate=16000):
-        print("🎙️ Recording started...")
-        recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
-        sd.wait()
-        wav.write(filename, sample_rate, recording)
-        print("✅ Recording saved.")
+
  
     def recognize_speech_once(self):
         if self.recognizer is None:
             print("⚠ Recognizer is not initialized.")
-            # self.to_WAKEWORD()
             self.on_enter_SPEECH_RECOG()
             return
- 
+
         try:
             subprocess.run(["rosparam", "set", param_name, "sttrunning"])
-            self.record_audio("temp_recorded.wav")
-            speaker = detect_speaker()
-            print(speaker)
+
+            # Step 1: Record audio
+            record("temp_recorded.wav")
+
+            # Step 2: Start speaker identification in a separate thread
+            speaker_result = {"name": None} 
+            def run_speaker_identification():
+                try:
+                    input_wav = preprocess_wav(Path("recordings/temp_recorded.wav"))
+                    input_embedding = encoder.embed_utterance(input_wav)
+                    speaker = identify_speaker(input_embedding)  #knownembeddings are aready in the funtion in the speaker_detc.py
+                    speaker_result["name"] = speaker
+                    print(f"🧠 Identified speaker: {speaker}")
+                except Exception as e:
+                    print(f"❌ Error in speaker identification: {e}")
+            
+            speaker_thread = threading.Thread(target=run_speaker_identification)
+            speaker_thread.start()
+
+            # Step 3: Transcription (main thread)
             audio_config = speechsdk.AudioConfig(filename="temp_recorded.wav")
             recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
-            result = self.recognizer.recognize_once_async().get()
+            result = recognizer.recognize_once_async().get()
             subprocess.run(["rosparam", "set", param_name, "smiling"])
+
+            # Step 4: Wait for speaker identification to finish
+            speaker_thread.join()
+
         except Exception as e:
             print(f"❌ Error during recognition: {e}")
-            # self.to_WAKEWORD()
             self.on_enter_SPEECH_RECOG()
             return
  
